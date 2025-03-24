@@ -16,7 +16,7 @@ jobs:
       - name: Debug
         run: |
           echo "Hello, ${{ github.actor }}!"
-          SECRET_VALUE={{ secrets.GITHUB_TOKEN }}
+          SECRET_VALUE=${{ secrets.GITHUB_TOKEN }}
           echo "SECRET_VALUE=$SECRET_VALUE"
       - name: Checkout repository
         uses: actions/checkout@v4
