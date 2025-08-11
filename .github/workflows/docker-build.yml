@@ -90,4 +90,5 @@ jobs:
           git config user.email "actions@github.com"
           git add kustomization.yml
           git commit -m "Update mapserver image tag to $NEW_TAG [CI]"
+          cat gitlab-repo/prod-cib/overlays/prod/kustomize.yml
 #          git push origin main
