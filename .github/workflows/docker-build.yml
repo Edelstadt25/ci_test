@@ -80,25 +80,25 @@ jobs:
         run: |
           git clone git@gitlab.com:wftech/project-vumop/czechinvest-deployments.git gitlab-repo
           cd gitlab-repo/prod-cib/overlays/prod
-          
+
           NEW_TAG=${{ steps.extract_tag.outputs.new_tag }}
           echo "Setting mapserver tag to: $NEW_TAG"
-          
+
           kustomize edit set image registry.local/mapserver=ghcr.io/vumop/mapserver:$NEW_TAG
-          
+
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          
+
           git fetch origin main
-          
+
           # jen pro vývoj: ukázat, co se změnilo
           git diff origin/main
-          
+
           # commit/push jen pokud změny jsou
           if ! git diff --quiet; then
-              git add kustomization.yml
-              git commit -m "Update mapserver image tag to $NEW_TAG [CI]"
-#              git push origin main
+            git add kustomization.yml
+            git commit -m "Update mapserver image tag to $NEW_TAG [CI]"
+            # git push origin main
           else
-              echo "No changes detected — skipping commit"
+            echo "No changes detected — skipping commit"
           fi
