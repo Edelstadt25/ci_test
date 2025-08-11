@@ -11,17 +11,9 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write
-      actions: read
 
 
     steps:
-      - name: Print GitHub Token Permissions
-        run: |
-          echo "Repository Permissions:"
-          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-               -H "Accept: application/vnd.github.v3+json" \
-               https://api.github.com/repos/${{ github.repository }}/actions/permissions
       - name: Debug
         run: |
           echo "Hello, ${{ github.actor }}!"
@@ -63,3 +55,39 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Extract SHA tag from docker metadata
+        id: extract_tag
+        run: |
+          TAG=$(echo "${{ steps.meta.outputs.tags }}" | grep -o 'sha-[^,]*' | head -n1)
+          echo "Extracted tag: $TAG"
+          echo "new_tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin
+
+      - name: Setup SSH key for GitLab
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GITLAB_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Clone GitLab repo and update mapserver tag
+        run: |
+          git clone git@gitlab.com:wftech/project-vumop/czechinvest-deployments.git gitlab-repo
+          cd gitlab-repo/prod-cib/overlays/prod
+
+          NEW_TAG=${{ steps.extract_tag.outputs.new_tag }}
+          echo "Setting mapserver tag to: $NEW_TAG"
+
+          kustomize edit set image registry.local/mapserver=ghcr.io/vumop/mapserver:$NEW_TAG
+
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add kustomization.yml
+          git commit -m "Update mapserver image tag to $NEW_TAG [CI]"
+#          git push origin main
